@@ -10,5 +10,6 @@ char *xb_strncpy(const char *src, char *dest, int n);
 int xb_strncmp(const char *str1, const char *str2, int n);
 char *xb_strrchr(const char *src, const char ch);
 char *xb_strdup(const char *src);
+char *xb_strtok(char *str, const char *delim);
 
 #endif
