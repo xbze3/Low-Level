@@ -8,6 +8,10 @@
 // free == 1 (Block is free)
 // free == 0 (Block is NOT free)
 
+// Insert after compeletion
+// i decided to go with the worst fit allocation technique. This was in an effort to reduce internal
+// fragmentation as much as possible.
+
 #include <stdio.h>
 #include <stdlib.h>
 
