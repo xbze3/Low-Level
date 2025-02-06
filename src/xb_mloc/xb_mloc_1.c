@@ -8,12 +8,18 @@
 // free == 1 (Block is free)
 // free == 0 (Block is NOT free)
 
-// Insert after compeletion
-// i decided to go with the worst fit allocation technique. This was in an effort to reduce internal
+// Insert after completion
+// I decided to go with the worst fit allocation technique. This was in an effort to reduce internal
 // fragmentation as much as possible.
 
+// I added functionlity to ensure that memory allocations are alligned to a 16 byte boundary
+
 #include <stdio.h>
+#include <unistd.h>
 #include <stdlib.h>
+
+#define ALIGNMENT 16
+#define ALIGN_SIZE(size) (((size) + (ALIGNMENT - 1)) & ~(ALIGNMENT - 1))
 
 typedef struct Block
 {
@@ -26,6 +32,8 @@ Block *mem_init(int size)
 {
     if (size <= 0)
         return NULL;
+
+    size = ALIGN_SIZE(size);
 
     Block *block = malloc(sizeof(Block));
     if (block == NULL)
@@ -42,6 +50,8 @@ Block *xb_mloc(Block *block, int size)
 {
     if (size <= 0)
         return NULL;
+
+    size = ALIGN_SIZE(size);
 
     Block *tmp = block;
     Block *worstFit = NULL;
@@ -69,7 +79,7 @@ Block *xb_mloc(Block *block, int size)
         if (new_block == NULL)
             return NULL;
 
-        new_block->size = worstFit->size - size;
+        new_block->size = ALIGN_SIZE(worstFit->size - size);
         new_block->free = 1;
         new_block->next = worstFit->next;
 
