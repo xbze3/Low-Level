@@ -8,13 +8,22 @@
 #include <netinet/in.h>
 #include <unistd.h>
 
-#define BUFFER_SIZE 8192
+#define FILE_BUFFER_SIZE 8192
+#define CLIENT_REQUEST_BUFFER_SIZE 4096
 
 int main()
 {
     // Open html file
 
     FILE *html_data = fopen("index.html", "r");
+
+    // Define buffer for client request
+
+    char client_request_buffer[CLIENT_REQUEST_BUFFER_SIZE];
+
+    // Space to store client http request method, path and version
+
+    char *client_method, *client_requested_path, *client_http_version;
 
     // Check if html_data is NULL
 
@@ -26,7 +35,7 @@ int main()
 
     // Construct HTTP response
 
-    char response_data[BUFFER_SIZE];
+    char response_data[FILE_BUFFER_SIZE];
     memset(response_data, 0, sizeof(response_data));
 
     // Read contents of index.html with fread
@@ -36,7 +45,7 @@ int main()
 
     // Construct HTTP header
 
-    char http_header[BUFFER_SIZE + 128];
+    char http_header[FILE_BUFFER_SIZE + 128];
     snprintf(http_header, sizeof(http_header),
              "HTTP/1.1 200 OK\r\n"
              "Content-Type: text/html\r\n"
@@ -96,6 +105,56 @@ int main()
         {
             perror("Error accepting client connection");
             continue;
+        }
+
+        // Receive and print client http request
+
+        int client_request = recv(client_socket, client_request_buffer, CLIENT_REQUEST_BUFFER_SIZE - 1, 0);
+
+        // Check whether client http request was received successfully
+
+        if (client_request < 0)
+        {
+            perror("recv failed");
+            continue;
+        }
+        else if (client_request == 0)
+        {
+            printf("Client disconnected\n");
+        }
+        else
+        {
+            client_request_buffer[client_request] = '\0';
+            printf("\nReceived HTTP request [FULL]:\n%s\n", client_request_buffer);
+        }
+
+        // Extract client request method, path and headers
+
+        char *request_line = strtok(client_request_buffer, "\r\n");
+
+        if (request_line)
+        {
+
+            // Get the client method
+
+            client_method = strtok(request_line, " ");
+
+            // Get the client requested path
+
+            client_requested_path = strtok(NULL, " ");
+
+            // Get the client request http version
+
+            client_http_version = strtok(NULL, " ");
+        }
+
+        if (client_method && client_requested_path && client_http_version)
+        {
+            printf("----------Extracted Data----------\n");
+            printf("Method: %s\n", client_method);
+            printf("Path: %s\n", client_requested_path);
+            printf("HTTP Version: %s\n", client_http_version);
+            printf("----------------------------------\n");
         }
 
         // Send http header
