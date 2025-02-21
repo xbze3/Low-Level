@@ -8,21 +8,41 @@
 #include <netinet/in.h>
 #include <unistd.h>
 
+#define BUFFER_SIZE 8192
+
 int main()
 {
     // Open html file
 
     FILE *html_data = fopen("index.html", "r");
 
+    // Check if html_data is NULL
+
+    if (html_data == NULL)
+    {
+        perror("Error opening index.html");
+        exit(EXIT_FAILURE);
+    }
+
     // Construct HTTP response
 
-    char response_data[1024];
-    fgets(response_data, 1024, html_data);
+    char response_data[BUFFER_SIZE];
+    memset(response_data, 0, sizeof(response_data));
+
+    // Read contents of index.html with fread
+
+    size_t bytes_read = fread(response_data, 1, sizeof(response_data) - 1, html_data);
+    fclose(html_data);
 
     // Construct HTTP header
 
-    char http_header[2048] = "HTTP/1.1 200 OK\r\n\n";
-    strcat(http_header, response_data);
+    char http_header[BUFFER_SIZE + 128];
+    snprintf(http_header, sizeof(http_header),
+             "HTTP/1.1 200 OK\r\n"
+             "Content-Type: text/html\r\n"
+             "Content-Length: %zu\r\n"
+             "Connection: close\r\n\r\n%s",
+             bytes_read, response_data);
 
     // Create Socket
 
@@ -80,7 +100,7 @@ int main()
 
         // Send http header
 
-        if ((send(client_socket, http_header, sizeof(http_header), 0)) == -1)
+        if ((send(client_socket, http_header, strlen(http_header), 0)) == -1)
         {
             perror("Error sending http header");
             continue;
