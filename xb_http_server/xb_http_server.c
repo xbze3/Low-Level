@@ -45,7 +45,7 @@ int main()
 
     // Bind socket and check
 
-    if ((bind(server_socket, (struct sockaddr *)&server_address, sizeof(server_address)))-1)
+    if ((bind(server_socket, (struct sockaddr *)&server_address, sizeof(server_address))) == -1)
     {
         perror("Error encountered while binding socket");
         close(server_socket);
