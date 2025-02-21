@@ -13,9 +13,13 @@
 
 int main()
 {
+    // Create buffer to store file path
+
+    char file_path[256] = "./www";
+
     // Open html file
 
-    FILE *html_data = fopen("index.html", "r");
+    FILE *default_path = fopen("./www/index.html", "r");
 
     // Define buffer for client request
 
@@ -25,9 +29,9 @@ int main()
 
     char *client_method, *client_requested_path, *client_http_version;
 
-    // Check if html_data is NULL
+    // Check if default_path is NULL
 
-    if (html_data == NULL)
+    if (default_path == NULL)
     {
         perror("Error opening index.html");
         exit(EXIT_FAILURE);
@@ -40,8 +44,8 @@ int main()
 
     // Read contents of index.html with fread
 
-    size_t bytes_read = fread(response_data, 1, sizeof(response_data) - 1, html_data);
-    fclose(html_data);
+    size_t bytes_read = fread(response_data, 1, sizeof(response_data) - 1, default_path);
+    fclose(default_path);
 
     // Construct HTTP header
 
@@ -125,7 +129,9 @@ int main()
         else
         {
             client_request_buffer[client_request] = '\0';
-            printf("\nReceived HTTP request [FULL]:\n%s\n", client_request_buffer);
+
+            // Uncomment line below to see full client http request
+            // printf("\nReceived HTTP request [FULL]:\n%s\n", client_request_buffer);
         }
 
         // Extract client request method, path and headers
@@ -150,24 +156,63 @@ int main()
 
         if (client_method && client_requested_path && client_http_version)
         {
-            printf("----------Extracted Data----------\n");
+            printf("\n----------Extracted Data----------\n");
             printf("Method: %s\n", client_method);
             printf("Path: %s\n", client_requested_path);
             printf("HTTP Version: %s\n", client_http_version);
             printf("----------------------------------\n");
+
+            if (strcmp(client_requested_path, "/") == 0)
+            {
+                strcpy(client_requested_path, "/index.html");
+            }
+
+            strcpy(file_path, "./www");
+            strncat(file_path, client_requested_path, sizeof(file_path) - strlen(file_path) - 1);
+
+            FILE *file = fopen(file_path, "r");
+            if (file)
+            {
+                // Read the requested file and construct and http header with its contents
+
+                printf("Serving file: %s\n", file_path);
+                bytes_read = fread(response_data, 1, sizeof(response_data) - 1, file);
+                fclose(file);
+
+                snprintf(http_header, sizeof(http_header),
+                         "HTTP/1.1 200 OK\r\n"
+                         "Content-Type: text/html\r\n"
+                         "Content-Length: %zu\r\n"
+                         "Connection: close\r\n\r\n%s",
+                         bytes_read, response_data);
+            }
+
+            else
+            {
+                // Return 404 response if the file path could not be found
+
+                printf("File not found: %s\n", file_path);
+                snprintf(http_header, sizeof(http_header),
+                         "HTTP/1.1 404 Not Found\r\n"
+                         "Content-Type: text/plain\r\n"
+                         "Content-Length: 13\r\n"
+                         "Connection: close\r\n\r\n"
+                         "404 Not Found");
+            }
+
+            // Send http header
+
+            if ((send(client_socket, http_header, strlen(http_header), 0)) == -1)
+            {
+                perror("Error sending http header");
+                continue;
+            }
+
+            close(client_socket);
+
+            // Uncomment line below to see when client disconnects
+            // printf("Client Disconneted\n");
         }
-
-        // Send http header
-
-        if ((send(client_socket, http_header, strlen(http_header), 0)) == -1)
-        {
-            perror("Error sending http header");
-            continue;
-        }
-
-        close(client_socket);
-        printf("Client Disconneted\n");
     }
-
     return 0;
 }
