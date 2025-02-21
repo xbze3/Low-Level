@@ -55,9 +55,12 @@ int main()
 	{
 		perror("Receiving failed");
 	}
+	else if (bytes_received == 0)
+	{
+		printf("Server closed the connection.\n");
+	}
 	else
 	{
-
 		// Print server response if response was received successfully
 
 		server_response[bytes_received] = '\0';
