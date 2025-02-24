@@ -15,7 +15,7 @@ int main()
 {
     // Create buffer to store file path
 
-    char file_path[256] = "./www";
+    char file_path[256] = "./";
 
     // Open html file
 
