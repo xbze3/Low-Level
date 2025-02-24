@@ -79,7 +79,7 @@ int main()
 
     // Space to store client http request method, path and version
 
-    char *client_method, *client_requested_path, *client_http_version, *tmp;
+    char *client_method, *client_requested_path, *client_http_version, *read_type;
 
     // Register sigint handler
 
@@ -226,26 +226,33 @@ int main()
                 client_requested_path = modified_path;
             }
 
-            printf("\n----------Extracted Data----------\n");
-            printf("Method: %s\n", client_method);
-            printf("Path: %s\n", client_requested_path);
-            printf("File Type: %s\n", strrchr(client_requested_path, '.'));
-            printf("HTTP Version: %s\n", client_http_version);
-            printf("----------------------------------\n");
+            printf("%s : ", client_method);
+            printf("[ %s ]", client_requested_path);
+            printf(" %s", client_http_version);
 
             strcpy(file_path, ".");
             strncat(file_path, client_requested_path, sizeof(file_path) - strlen(file_path) - 1);
 
             // Get the content type given its entension
 
-            get_content_type(strrchr(client_requested_path, '.'));
+            if (strcmp(strrchr(client_requested_path, '.'), ".png") == 0 ||
+                strcmp(strrchr(client_requested_path, '.'), ".jpeg") == 0 ||
+                strcmp(strrchr(client_requested_path, '.'), ".gif") == 0 ||
+                strcmp(strrchr(client_requested_path, '.'), ".pdf") == 0)
+            {
+                read_type = "rb";
+            }
+            else
+            {
+                read_type = "r";
+            }
 
-            FILE *file = fopen(file_path, "r");
+            FILE *file = fopen(file_path, read_type);
+
             if (file)
             {
                 // Read the requested file and construct and http header with its contents
 
-                printf("Serving file: %s\n", file_path);
                 bytes_read = fread(response_data, 1, sizeof(response_data) - 1, file);
                 fclose(file);
 
@@ -255,19 +262,22 @@ int main()
                          "Content-Length: %zu\r\n"
                          "Connection: close\r\n\r\n%s",
                          get_content_type(strrchr(client_requested_path, '.')), bytes_read, response_data);
+
+                printf(" [ 200 ]\n");
             }
 
             else
             {
                 // Return 404 response if the file path could not be found
 
-                printf("File not found: %s\n", file_path);
                 snprintf(http_header, sizeof(http_header),
                          "HTTP/1.1 404 Not Found\r\n"
                          "Content-Type: text/plain\r\n"
                          "Content-Length: 13\r\n"
                          "Connection: close\r\n\r\n"
                          "404 Not Found");
+
+                printf(" [ 404 ]\n");
             }
 
             // Send http header
