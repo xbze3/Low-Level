@@ -251,6 +251,7 @@ int main()
 
             if (file)
             {
+
                 // Read the requested file and construct and http header with its contents
 
                 bytes_read = fread(response_data, 1, sizeof(response_data) - 1, file);
@@ -260,12 +261,23 @@ int main()
                          "HTTP/1.1 200 OK\r\n"
                          "Content-Type: %s\r\n"
                          "Content-Length: %zu\r\n"
-                         "Connection: close\r\n\r\n%s",
-                         get_content_type(strrchr(client_requested_path, '.')), bytes_read, response_data);
+                         "Connection: close\r\n\r\n",
+                         get_content_type(strrchr(client_requested_path, '.')), bytes_read);
 
                 printf(" [ 200 ]\n");
-            }
 
+                if ((send(client_socket, http_header, strlen(http_header), 0)) == -1)
+                {
+                    perror("Error sending http header");
+                    continue;
+                }
+
+                if (send(client_socket, response_data, bytes_read, 0) == -1)
+                {
+                    perror("Error sending file data");
+                    continue;
+                }
+            }
             else
             {
                 // Return 404 response if the file path could not be found
@@ -278,14 +290,12 @@ int main()
                          "404 Not Found");
 
                 printf(" [ 404 ]\n");
-            }
 
-            // Send http header
-
-            if ((send(client_socket, http_header, strlen(http_header), 0)) == -1)
-            {
-                perror("Error sending http header");
-                continue;
+                if ((send(client_socket, http_header, strlen(http_header), 0)) == -1)
+                {
+                    perror("Error sending http header");
+                    continue;
+                }
             }
 
             close(client_socket);
