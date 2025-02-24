@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -11,11 +12,22 @@
 #define FILE_BUFFER_SIZE 8192
 #define CLIENT_REQUEST_BUFFER_SIZE 4096
 
+int server_socket;
+
+// Handle exit gracefully
+
+void handle_sigint(int sig)
+{
+    printf("\nCaught signal %d (Ctrl+C). Closing server socket...\n", sig);
+    close(server_socket);
+    exit(0);
+}
+
 int main()
 {
     // Create buffer to store file path
 
-    char file_path[256] = "./";
+    char file_path[256] = ".";
 
     // Open html file
 
@@ -28,6 +40,10 @@ int main()
     // Space to store client http request method, path and version
 
     char *client_method, *client_requested_path, *client_http_version;
+
+    // Register sigint handler
+
+    signal(SIGINT, handle_sigint);
 
     // Check if default_path is NULL
 
@@ -59,7 +75,7 @@ int main()
 
     // Create Socket
 
-    int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+    server_socket = socket(AF_INET, SOCK_STREAM, 0);
 
     // Check if socket was created successfully
 
@@ -68,6 +84,11 @@ int main()
         perror("Error creating server socket");
         exit(EXIT_FAILURE);
     }
+
+    // Set SO_REUSEADDR to allow immediate reuse of the port
+
+    int opt = 1;
+    setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
     // Define Socket Address
 
@@ -164,10 +185,10 @@ int main()
 
             if (strcmp(client_requested_path, "/") == 0)
             {
-                strcpy(client_requested_path, "/index.html");
+                strcpy(client_requested_path, "/www/index.html");
             }
 
-            strcpy(file_path, "./www");
+            strcpy(file_path, ".");
             strncat(file_path, client_requested_path, sizeof(file_path) - strlen(file_path) - 1);
 
             FILE *file = fopen(file_path, "r");
