@@ -23,6 +23,46 @@ void handle_sigint(int sig)
     exit(0);
 }
 
+char *get_content_type(char *content_ext)
+{
+    if (strcmp(content_ext, ".html") == 0)
+    {
+        return "text/html";
+    }
+    else if (strcmp(content_ext, ".css") == 0)
+    {
+        return "text/css";
+    }
+    else if (strcmp(content_ext, ".js") == 0)
+    {
+        return "application/javascript";
+    }
+    else if (strcmp(content_ext, ".json") == 0)
+    {
+        return "application/json";
+    }
+    else if (strcmp(content_ext, ".png") == 0)
+    {
+        return "image/png";
+    }
+    else if (strcmp(content_ext, ".jpg") == 0 || strcmp(content_ext, ".jpeg") == 0)
+    {
+        return "image/jpeg";
+    }
+    else if (strcmp(content_ext, ".gif") == 0)
+    {
+        return "image/gif";
+    }
+    else if (strcmp(content_ext, ".pdf") == 0)
+    {
+        return "application/pdf";
+    }
+    else
+    {
+        return "It's not HTML\n";
+    }
+}
+
 int main()
 {
     // Create buffer to store file path
@@ -39,7 +79,7 @@ int main()
 
     // Space to store client http request method, path and version
 
-    char *client_method, *client_requested_path, *client_http_version;
+    char *client_method, *client_requested_path, *client_http_version, *tmp;
 
     // Register sigint handler
 
@@ -180,7 +220,10 @@ int main()
 
             if (strcmp(client_requested_path, "/") == 0)
             {
-                strcpy(client_requested_path, "/www/index.html");
+                char modified_path[256];
+                strcpy(modified_path, "/www/index.html");
+
+                client_requested_path = modified_path;
             }
 
             printf("\n----------Extracted Data----------\n");
@@ -193,6 +236,10 @@ int main()
             strcpy(file_path, ".");
             strncat(file_path, client_requested_path, sizeof(file_path) - strlen(file_path) - 1);
 
+            // Get the content type given its entension
+
+            get_content_type(strrchr(client_requested_path, '.'));
+
             FILE *file = fopen(file_path, "r");
             if (file)
             {
@@ -204,10 +251,10 @@ int main()
 
                 snprintf(http_header, sizeof(http_header),
                          "HTTP/1.1 200 OK\r\n"
-                         "Content-Type: text/html\r\n"
+                         "Content-Type: %s\r\n"
                          "Content-Length: %zu\r\n"
                          "Connection: close\r\n\r\n%s",
-                         bytes_read, response_data);
+                         get_content_type(strrchr(client_requested_path, '.')), bytes_read, response_data);
             }
 
             else
