@@ -177,16 +177,18 @@ int main()
 
         if (client_method && client_requested_path && client_http_version)
         {
-            printf("\n----------Extracted Data----------\n");
-            printf("Method: %s\n", client_method);
-            printf("Path: %s\n", client_requested_path);
-            printf("HTTP Version: %s\n", client_http_version);
-            printf("----------------------------------\n");
 
             if (strcmp(client_requested_path, "/") == 0)
             {
                 strcpy(client_requested_path, "/www/index.html");
             }
+
+            printf("\n----------Extracted Data----------\n");
+            printf("Method: %s\n", client_method);
+            printf("Path: %s\n", client_requested_path);
+            printf("File Type: %s\n", strrchr(client_requested_path, '.'));
+            printf("HTTP Version: %s\n", client_http_version);
+            printf("----------------------------------\n");
 
             strcpy(file_path, ".");
             strncat(file_path, client_requested_path, sizeof(file_path) - strlen(file_path) - 1);
