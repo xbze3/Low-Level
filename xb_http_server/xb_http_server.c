@@ -59,7 +59,7 @@ char *get_content_type(char *content_ext)
     }
     else
     {
-        return "It's not HTML\n";
+        return "application/octet-stream";
     }
 }
 
