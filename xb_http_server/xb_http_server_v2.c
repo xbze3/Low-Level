@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <sys/stat.h>
 
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -13,8 +14,6 @@
 #define CLIENT_REQUEST_BUFFER_SIZE 4096
 
 int server_socket;
-
-// Handle exit gracefully
 
 void handle_sigint(int sig)
 {
@@ -63,16 +62,70 @@ char *get_content_type(char *content_ext)
     }
 }
 
+void handle_get_request(int client_socket, char *requested_path)
+{
+    char file_buffer[4096];
+    char http_header[512];
+    char file_path[256] = ".";
+    size_t bytes_read;
+
+    if (strcmp(requested_path, "/") == 0)
+    {
+        strcpy(requested_path, "/www/index.html");
+    }
+
+    strncat(file_path, requested_path, sizeof(file_path) - strlen(file_path) - 1);
+
+    FILE *file = fopen(file_path, "r");
+
+    if (file)
+    {
+        struct stat file_stat;
+        stat(file_path, &file_stat);
+        size_t file_size = file_stat.st_size;
+
+        snprintf(http_header, sizeof(http_header),
+                 "HTTP/1.1 200 OK\r\n"
+                 "Content-Type: %s\r\n"
+                 "Content-Length: %zu\r\n"
+                 "Connection: close\r\n\r\n",
+                 get_content_type(strrchr(requested_path, '.')), file_size);
+
+        send(client_socket, http_header, strlen(http_header), 0);
+
+        printf(" [ 200 ]\n");
+
+        while ((bytes_read = fread(file_buffer, 1, sizeof(file_buffer), file)) > 0)
+        {
+            send(client_socket, file_buffer, bytes_read, 0);
+        }
+
+        fclose(file);
+    }
+
+    else
+    {
+        snprintf(http_header, sizeof(http_header),
+                 "HTTP/1.1 404 Not Found\r\n"
+                 "Content-Type: text/plain\r\n"
+                 "Content-Length: 13\r\n"
+                 "Connection: close\r\n\r\n"
+                 "404 Not Found");
+
+        printf(" [ 404 ]\n");
+
+        if ((send(client_socket, http_header, strlen(http_header), 0)) == -1)
+        {
+            perror("Error sending http header");
+        }
+    }
+
+    close(client_socket);
+    return;
+}
+
 int main()
 {
-    // Create buffer to store file path
-
-    char file_path[256] = ".";
-
-    // Open html file
-
-    FILE *default_path = fopen("./www/index.html", "r");
-
     // Define buffer for client request
 
     char client_request_buffer[CLIENT_REQUEST_BUFFER_SIZE];
@@ -84,34 +137,6 @@ int main()
     // Register sigint handler
 
     signal(SIGINT, handle_sigint);
-
-    // Check if default_path is NULL
-
-    if (default_path == NULL)
-    {
-        perror("Error opening index.html");
-        exit(EXIT_FAILURE);
-    }
-
-    // Construct HTTP response
-
-    char response_data[FILE_BUFFER_SIZE];
-    memset(response_data, 0, sizeof(response_data));
-
-    // Read contents of index.html with fread
-
-    size_t bytes_read = fread(response_data, 1, sizeof(response_data) - 1, default_path);
-    fclose(default_path);
-
-    // Construct HTTP header
-
-    char http_header[FILE_BUFFER_SIZE + 128];
-    snprintf(http_header, sizeof(http_header),
-             "HTTP/1.1 200 OK\r\n"
-             "Content-Type: text/html\r\n"
-             "Content-Length: %zu\r\n"
-             "Connection: close\r\n\r\n%s",
-             bytes_read, response_data);
 
     // Create Socket
 
@@ -155,11 +180,10 @@ int main()
         exit(EXIT_FAILURE);
     }
 
-    printf("Server is listening on port 8001...\n");
+    printf("Server is listening on port 8001...\n\n");
 
     while (1)
     {
-
         // Accept client requests
 
         int client_socket = accept(server_socket, NULL, NULL);
@@ -217,92 +241,16 @@ int main()
 
         if (client_method && client_requested_path && client_http_version)
         {
-
-            if (strcmp(client_requested_path, "/") == 0)
-            {
-                char modified_path[256];
-                strcpy(modified_path, "/www/index.html");
-
-                client_requested_path = modified_path;
-            }
-
             printf("%s : ", client_method);
             printf("[ %s ]", client_requested_path);
             printf(" %s", client_http_version);
+        }
 
-            strcpy(file_path, ".");
-            strncat(file_path, client_requested_path, sizeof(file_path) - strlen(file_path) - 1);
-
-            // Get the content type given its entension
-
-            if (strcmp(strrchr(client_requested_path, '.'), ".png") == 0 ||
-                strcmp(strrchr(client_requested_path, '.'), ".jpeg") == 0 ||
-                strcmp(strrchr(client_requested_path, '.'), ".gif") == 0 ||
-                strcmp(strrchr(client_requested_path, '.'), ".pdf") == 0)
-            {
-                read_type = "rb";
-            }
-            else
-            {
-                read_type = "r";
-            }
-
-            FILE *file = fopen(file_path, read_type);
-
-            if (file)
-            {
-
-                // Read the requested file and construct and http header with its contents
-
-                bytes_read = fread(response_data, 1, sizeof(response_data) - 1, file);
-                fclose(file);
-
-                snprintf(http_header, sizeof(http_header),
-                         "HTTP/1.1 200 OK\r\n"
-                         "Content-Type: %s\r\n"
-                         "Content-Length: %zu\r\n"
-                         "Connection: close\r\n\r\n",
-                         get_content_type(strrchr(client_requested_path, '.')), bytes_read);
-
-                printf(" [ 200 ]\n");
-
-                if ((send(client_socket, http_header, strlen(http_header), 0)) == -1)
-                {
-                    perror("Error sending http header");
-                    continue;
-                }
-
-                if (send(client_socket, response_data, bytes_read, 0) == -1)
-                {
-                    perror("Error sending file data");
-                    continue;
-                }
-            }
-            else
-            {
-                // Return 404 response if the file path could not be found
-
-                snprintf(http_header, sizeof(http_header),
-                         "HTTP/1.1 404 Not Found\r\n"
-                         "Content-Type: text/plain\r\n"
-                         "Content-Length: 13\r\n"
-                         "Connection: close\r\n\r\n"
-                         "404 Not Found");
-
-                printf(" [ 404 ]\n");
-
-                if ((send(client_socket, http_header, strlen(http_header), 0)) == -1)
-                {
-                    perror("Error sending http header");
-                    continue;
-                }
-            }
-
-            close(client_socket);
-
-            // Uncomment line below to see when client disconnects
-            // printf("Client Disconneted\n");
+        if ((strcmp(client_method, "GET")) == 0)
+        {
+            handle_get_request(client_socket, client_requested_path);
         }
     }
+
     return 0;
 }
