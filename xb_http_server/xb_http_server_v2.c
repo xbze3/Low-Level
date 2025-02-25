@@ -9,6 +9,7 @@
 
 #include <netinet/in.h>
 #include <unistd.h>
+#include <arpa/inet.h>
 
 #define FILE_BUFFER_SIZE 8192
 #define CLIENT_REQUEST_BUFFER_SIZE 4096
@@ -78,12 +79,36 @@ void handle_get_request(int client_socket, char *requested_path)
 
     FILE *file = fopen(file_path, "r");
 
+    struct stat file_stat;
+
     if (file)
     {
-        struct stat file_stat;
         stat(file_path, &file_stat);
-        size_t file_size = file_stat.st_size;
 
+        if (S_ISDIR(file_stat.st_mode))
+        {
+            snprintf(http_header, sizeof(http_header),
+                     "HTTP/1.1 403 Forbidden\r\n"
+                     "Content-Type: text/plain\r\n"
+                     "Content-Length: 15\r\n"
+                     "Connection: close\r\n\r\n"
+                     "403 Forbidden");
+
+            if ((send(client_socket, http_header, strlen(http_header), 0)) == -1)
+            {
+                perror("Error sending http header");
+            }
+
+            printf(" [ 403 ]\n");
+
+            fclose(file);
+
+            close(client_socket);
+
+            return;
+        }
+
+        size_t file_size = file_stat.st_size;
         snprintf(http_header, sizeof(http_header),
                  "HTTP/1.1 200 OK\r\n"
                  "Content-Type: %s\r\n"
@@ -91,7 +116,10 @@ void handle_get_request(int client_socket, char *requested_path)
                  "Connection: close\r\n\r\n",
                  get_content_type(strrchr(requested_path, '.')), file_size);
 
-        send(client_socket, http_header, strlen(http_header), 0);
+        if ((send(client_socket, http_header, strlen(http_header), 0)) == -1)
+        {
+            perror("Error sending http header");
+        }
 
         printf(" [ 200 ]\n");
 
@@ -129,6 +157,7 @@ int main()
     // Define buffer for client request
 
     char client_request_buffer[CLIENT_REQUEST_BUFFER_SIZE];
+    char client_ip[INET_ADDRSTRLEN];
 
     // Space to store client http request method, path and version
 
@@ -186,7 +215,11 @@ int main()
     {
         // Accept client requests
 
-        int client_socket = accept(server_socket, NULL, NULL);
+        struct sockaddr_in client_address;
+        socklen_t client_address_len = sizeof(client_address);
+        int client_socket = accept(server_socket, (struct sockaddr *)&client_address, &client_address_len);
+
+        inet_ntop(AF_INET, &client_address.sin_addr, client_ip, sizeof(client_ip)) == NULL;
 
         // Check if client request was accpeted successfully
 
@@ -239,10 +272,11 @@ int main()
             client_http_version = strtok(NULL, " ");
         }
 
-        if (client_method && client_requested_path && client_http_version)
+        if (client_method && client_requested_path && client_http_version && client_ip)
         {
             printf("%s : ", client_method);
-            printf("[ %s ]", client_requested_path);
+            printf("[ %s ] :", client_ip);
+            printf(" [ %s ]", client_requested_path);
             printf(" %s", client_http_version);
         }
 
