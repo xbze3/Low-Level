@@ -25,42 +25,119 @@ void handle_sigint(int sig)
 
 char *get_content_type(char *content_ext)
 {
-    if (strcmp(content_ext, ".html") == 0)
-    {
-        return "text/html";
-    }
-    else if (strcmp(content_ext, ".css") == 0)
-    {
-        return "text/css";
-    }
-    else if (strcmp(content_ext, ".js") == 0)
-    {
-        return "application/javascript";
-    }
-    else if (strcmp(content_ext, ".json") == 0)
-    {
-        return "application/json";
-    }
-    else if (strcmp(content_ext, ".png") == 0)
-    {
-        return "image/png";
-    }
-    else if (strcmp(content_ext, ".jpg") == 0 || strcmp(content_ext, ".jpeg") == 0)
-    {
-        return "image/jpeg";
-    }
-    else if (strcmp(content_ext, ".gif") == 0)
-    {
-        return "image/gif";
-    }
-    else if (strcmp(content_ext, ".pdf") == 0)
-    {
-        return "application/pdf";
-    }
-    else
-    {
+    if (strcmp(content_ext, ".aac") == 0)
+        return "audio/aac";
+
+    else if (strcmp(content_ext, ".abw") == 0)
+        return "application/x-abiword";
+
+    else if (strcmp(content_ext, ".apng") == 0)
+        return "image/apng";
+
+    else if (strcmp(content_ext, ".arc") == 0)
+        return "application/x-freearc";
+
+    else if (strcmp(content_ext, ".avif") == 0)
+        return "image/avif";
+
+    else if (strcmp(content_ext, ".avi") == 0)
+        return "video/x-msvideo";
+
+    else if (strcmp(content_ext, ".azw") == 0)
+        return "application/vnd.amazon.ebook";
+
+    else if (strcmp(content_ext, ".bin") == 0)
         return "application/octet-stream";
-    }
+
+    else if (strcmp(content_ext, ".bmp") == 0)
+        return "image/bmp";
+
+    else if (strcmp(content_ext, ".bz") == 0)
+        return "application/x-bzip";
+
+    else if (strcmp(content_ext, ".bz2") == 0)
+        return "application/x-bzip2";
+
+    else if (strcmp(content_ext, ".cda") == 0)
+        return "application/x-cdf";
+
+    else if (strcmp(content_ext, ".csh") == 0)
+        return "application/x-csh";
+
+    else if (strcmp(content_ext, ".css") == 0)
+        return "text/css";
+
+    else if (strcmp(content_ext, ".csv") == 0)
+        return "text/csv";
+
+    else if (strcmp(content_ext, ".doc") == 0)
+        return "application/msword";
+
+    else if (strcmp(content_ext, ".docx") == 0)
+        return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+    else if (strcmp(content_ext, ".eot") == 0)
+        return "application/vnd.ms-fontobject";
+
+    else if (strcmp(content_ext, ".epub") == 0)
+        return "application/epub+zip";
+
+    else if (strcmp(content_ext, ".gz") == 0)
+        return "application/gzip";
+
+    else if (strcmp(content_ext, ".gif") == 0)
+        return "image/gif";
+
+    else if (strcmp(content_ext, ".htm") == 0 || strcmp(content_ext, ".html") == 0)
+        return "text/html";
+
+    else if (strcmp(content_ext, ".ico") == 0)
+        return "image/vnd.microsoft.icon";
+
+    else if (strcmp(content_ext, ".ics") == 0)
+        return "text/calendar";
+
+    else if (strcmp(content_ext, ".jar") == 0)
+        return "application/java-archive";
+
+    else if (strcmp(content_ext, ".jpeg") == 0 || strcmp(content_ext, ".jpg") == 0)
+        return "image/jpeg";
+
+    else if (strcmp(content_ext, ".js") == 0)
+        return "text/javascript";
+
+    else if (strcmp(content_ext, ".json") == 0)
+        return "application/json";
+
+    else if (strcmp(content_ext, ".jsonld") == 0)
+        return "application/ld+json";
+
+    else if (strcmp(content_ext, ".mid") == 0 || strcmp(content_ext, ".midi") == 0)
+        return "audio/midi";
+
+    else if (strcmp(content_ext, ".mp3") == 0)
+        return "audio/mpeg";
+
+    else if (strcmp(content_ext, ".mp4") == 0)
+        return "video/mp4";
+
+    else if (strcmp(content_ext, ".mpeg") == 0)
+        return "video/mpeg";
+
+    else if (strcmp(content_ext, ".png") == 0)
+        return "image/png";
+
+    else if (strcmp(content_ext, ".pdf") == 0)
+        return "application/pdf";
+
+    else if (strcmp(content_ext, ".zip") == 0)
+        return "application/zip";
+
+    else if (strcmp(content_ext, ".7z") == 0)
+        return "application/x-7z-compressed";
+
+    else
+        return "application/octet-stream";
 }
 
 void handle_get_request(int client_socket, char *requested_path)
