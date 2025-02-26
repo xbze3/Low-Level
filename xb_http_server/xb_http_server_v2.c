@@ -354,7 +354,6 @@ int main()
             printf("%s : ", client_method);
             printf("[ %s ] :", client_ip);
             printf(" [ %s ]", client_requested_path);
-            printf(" %s", client_http_version);
         }
 
         if ((strcmp(client_method, "GET")) == 0)
